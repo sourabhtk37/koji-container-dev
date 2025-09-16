@@ -13,11 +13,11 @@ echo "Detected OS: $OS_NAME"
 # host doesn't need to have apache installed, so use
 # uid instead
 if [ "$OS_NAME" = "Linux" ]; then
-    echo "Running podman unshare directly on Linux host..."
-    podman unshare chown 48:48 $BASEDIR
+    echo "Running docker to set ownership..."
+    docker run --rm -v $(pwd)/$BASEDIR:/tmp/basedir alpine chown 48:48 /tmp/basedir
 elif [ "$OS_NAME" = "Darwin" ]; then
-    echo "Running podman unshare inside Podman machine (macOS host)..."
-    podman machine ssh "podman unshare chown 48:48 $(pwd)/$BASEDIR"
+    echo "Running docker to set ownership..."
+    docker run --rm -v $(pwd)/$BASEDIR:/tmp/basedir alpine chown 48:48 /tmp/basedir
 else
     echo "Unsupported OS for this operation: $OS_NAME"
 fi

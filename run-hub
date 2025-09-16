@@ -4,25 +4,28 @@
 BASEDIR=`pwd`
 HOSTIP=`hostname  -I | cut -f 1 -d ' '`
 
-podman pod create -p 5432:5432 -p 8080:80 -p 8081:443 koji-dev
+# Create a docker network for koji containers
+docker network create koji-dev 2>/dev/null || true
 
-podman run -d --rm --name koji-postgres \
-    --pod=koji-dev \
+docker run -d --rm --name koji-postgres \
+    --network=koji-dev \
+    -p 5432:5432 \
     -e POSTGRES_USER=koji \
     -e POSTGRES_DB=koji \
     -e POSTGRES_HOST_AUTH_METHOD=password \
     -e POSTGRES_PASSWORD=mypassword \
     -e DB_SCHEMA=/opt/schemas/schema.sql \
-    -v $BASEDIR/db/data:/var/lib/postgresql/data:z \
-    -v $BASEDIR/db:/docker-entrypoint-initdb.d:z \
-    -v $CODEDIR:/opt:z \
+    -v $BASEDIR/db/data:/var/lib/postgresql/data \
+    -v $BASEDIR/db:/docker-entrypoint-initdb.d \
+    -v $CODEDIR:/opt \
     docker.io/library/postgres:17 && sleep 2
 
-podman run -it --rm \
-    --pod=koji-dev \
-    --security-opt label=disable \
-    -v $BASEDIR/basedir:/mnt/koji:z \
-    -v $BASEDIR/hub:/opt/cfg:z \
+docker run -it --rm \
+    --network=koji-dev \
+    -p 8080:80 \
+    -p 8081:443 \
+    -v $BASEDIR/basedir:/mnt/koji \
+    -v $BASEDIR/hub:/opt/cfg \
     -v $CODEDIR:/opt/koji \
     --name koji-hub \
     --env=HOSTIP=$HOSTIP \

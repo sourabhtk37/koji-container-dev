@@ -2,8 +2,8 @@ IMAGE_NAME = koji-cert-generator
 CERTS_DIR_LOCAL = $(shell pwd)/certs
 HUB_HOSTNAMES = localhost
 FORCE = false
-BUILD_ARGS = -t ${IMAGE_NAME}
-CONTAINER_CMD ?= podman
+BUILD_ARGS = -f Containerfile -t ${IMAGE_NAME}
+CONTAINER_CMD ?= docker
 
 ifeq (${FORCE}, true)
 BUILD_ARGS := --no-cache ${BUILD_ARGS}
@@ -36,13 +36,13 @@ gen-certs:
 	           -e KOJI_USER="kojiadmin" \
 	           -it ${IMAGE_NAME}
 ifeq ($(shell uname -s),Linux)
-	@echo "Detected Linux OS. Running podman unshare directly."
-	${CONTAINER_CMD} unshare chmod -fR a+rw $(CERTS_DIR_LOCAL)
+	@echo "Detected Linux OS. Setting permissions directly."
+	chmod -R a+rw $(CERTS_DIR_LOCAL)
 else ifeq ($(shell uname -s),Darwin)
-	@echo "Detected macOS OS. Running podman unshare inside Podman machine."
-	${CONTAINER_CMD} machine ssh "${CONTAINER_CMD} unshare chmod -fR a+rw $(CERTS_DIR_LOCAL)"
+	@echo "Detected macOS OS. Setting permissions directly."
+	chmod -R a+rw $(CERTS_DIR_LOCAL)
 else
-	@echo "Unsupported OS: $(shell uname -s). Cannot run podman unshare."
+	@echo "Unsupported OS: $(shell uname -s). Cannot set permissions."
 	@exit 1
 endif
 	mkdir -p ../hub/certs
